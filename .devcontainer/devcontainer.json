@@ -1,11 +1,12 @@
 {
     "name": "Python Development",
     "image": "registry.gitlab.com/tviitkar/images/python-dev:latest",
-    "postCreateCommand": "pip3 install requests aiohttp asyncio",
+    "postCreateCommand": "pip3 install aiohttp asyncio telnetlib3",
     "containerEnv": {
-        "FLRIG_URL": "http://127.0.0.1:12345",
         "WAVELOG_URL": "https://wavelog.sdr.ee/",
-        "WAVELOG_STATION_ID": "FTDX10"
+        "WAVELOG_STATION_ID": "FTDX10",
+        "RIGCTL_ADDRESS": "127.0.0.1",
+        "RIGCTL_PORT": "4532"
     },
     "remoteEnv": {
         "WAVELOG_API_KEY": "${env:WAVELOG_API_KEY}"
