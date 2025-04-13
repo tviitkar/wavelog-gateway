@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import os
 
-from xmlrpc import client
+from rigctl import RigctlTelnet
 from logger.logger import logger
 
 logger = logger(__name__)
@@ -54,7 +54,9 @@ async def radio_api_call(**kwargs):
 
 
 async def main_process():
-    flrig = client.ServerProxy(uri=os.getenv("FLRIG_URL"))
+    rig = RigctlTelnet(os.getenv("RIGCTL_ADDRESS"), os.getenv("RIGCTL_PORT"))
+    await rig.connect()
+
     shared_state = {"frequency": None, "mode": None, "power": None}
 
     frequency = VariableWatcher("frequency", shared_state, callback=radio_api_call)
@@ -62,9 +64,9 @@ async def main_process():
     power = VariableWatcher("power", shared_state, callback=radio_api_call)
 
     while True:
-        frequency.value = flrig.rig.get_vfo()
-        mode.value = flrig.rig.get_mode()
-        power.value = flrig.rig.get_power()
+        frequency.value = await rig.get_frequency()
+        mode.value = await rig.get_mode()
+        power.value = await rig.get_rfpower(frequency.value, mode.value)
         await asyncio.sleep(1)
 
 
