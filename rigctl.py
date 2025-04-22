@@ -1,4 +1,5 @@
 import telnetlib3
+import asyncio
 
 
 class RigctlTelnet:
@@ -20,7 +21,7 @@ class RigctlTelnet:
         self.writer.write(command + "\n")
         await self.writer.drain()
 
-        response = await self.reader.read(512)
+        response = await asyncio.wait_for(self.reader.read(512), timeout=5)
         return response.strip()
 
     async def get_frequency(self):
