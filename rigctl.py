@@ -37,4 +37,4 @@ class RigctlTelnet:
 
     async def convert_to_watts(self, rfpower, freq, mode):
         milliwats = await self.send_command(f"2 {rfpower} {freq} {mode}")
-        return str(int(milliwats) / 1000)
+        return str(round(int(milliwats) / 1000))
