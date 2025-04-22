@@ -55,7 +55,17 @@ async def radio_api_call(**kwargs):
 
 async def main_process():
     rig = RigctlTelnet(os.getenv("RIGCTL_ADDRESS"), os.getenv("RIGCTL_PORT"))
-    await rig.connect()
+
+    try:
+        await rig.connect()
+        logger.info(
+            f"Connected to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}"
+        )
+    except Exception:
+        logger.warning(
+            f"Connection to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')} failed."
+        )
+        raise
 
     shared_state = {"frequency": None, "mode": None, "power": None}
 
@@ -64,9 +74,13 @@ async def main_process():
     power = VariableWatcher("power", shared_state, callback=radio_api_call)
 
     while True:
-        frequency.value = await rig.get_frequency()
-        mode.value = await rig.get_mode()
-        power.value = await rig.get_rfpower(frequency.value, mode.value)
+        try:
+            frequency.value = await rig.get_frequency()
+            mode.value = await rig.get_mode()
+            power.value = await rig.get_rfpower(frequency.value, mode.value)
+        except Exception:
+            logger.warning("Critical error, exiting.")
+            raise
         await asyncio.sleep(1)
 
 
