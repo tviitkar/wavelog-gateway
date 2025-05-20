@@ -1,4 +1,5 @@
 import telnetlib3
+import asyncio
 
 
 class RigctlTelnet:
@@ -20,7 +21,7 @@ class RigctlTelnet:
         self.writer.write(command + "\n")
         await self.writer.drain()
 
-        response = await self.reader.read(512)
+        response = await asyncio.wait_for(self.reader.read(512), timeout=5)
         return response.strip()
 
     async def get_frequency(self):
@@ -36,4 +37,4 @@ class RigctlTelnet:
 
     async def convert_to_watts(self, rfpower, freq, mode):
         milliwats = await self.send_command(f"2 {rfpower} {freq} {mode}")
-        return str(int(milliwats) / 1000)
+        return str(round(int(milliwats) / 1000))
