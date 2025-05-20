@@ -2,7 +2,7 @@ import aiohttp
 import asyncio
 import os
 
-from rigctl import RigctlTelnet
+from rigctl.rigctl import RigctlTelnet
 from logger.logger import logger
 
 logger = logger(__name__)
