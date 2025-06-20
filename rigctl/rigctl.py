@@ -1,6 +1,6 @@
 import telnetlib3
 import asyncio
-
+import re
 
 class RigctlTelnet:
     def __init__(self, hostname: str, port: int):
@@ -22,6 +22,9 @@ class RigctlTelnet:
         await self.writer.drain()
 
         response = await asyncio.wait_for(self.reader.read(512), timeout=5)
+        match = re.match(r"RPRT (-\d+)", response)
+        if match:
+            raise RuntimeError(f"rigctld returned error code {int(match.group(1))} for command '{command}'")
         return response.strip()
 
     async def get_frequency(self):

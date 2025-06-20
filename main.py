@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import os
+import sys
 
 from rigctl.rigctl import RigctlTelnet
 from logger.logger import logger
@@ -78,9 +79,9 @@ async def main_process():
             frequency.value = await rig.get_frequency()
             mode.value = await rig.get_mode()
             power.value = await rig.get_rfpower(frequency.value, mode.value)
-        except Exception:
-            logger.warning("Critical error, exiting.")
-            raise
+        except RuntimeError as err:
+            logger.warning(f"{err}")
+            sys.exit(1)
         await asyncio.sleep(1)
 
 
