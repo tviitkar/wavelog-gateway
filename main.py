@@ -58,12 +58,16 @@ async def main_process():
     rig = RigctlTelnet(os.getenv("RIGCTL_ADDRESS"), os.getenv("RIGCTL_PORT"))
 
     try:
+        logger.info(f"Connecting to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}")
         await rig.connect()
+        connection_test = await rig.test_connection()
+        if not connection_test:
+            raise ConnectionError
         logger.info(
             f"Connected to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}"
         )
-    except ConnectionRefusedError as err:
-        logger.warning(f"{err}")
+    except (ConnectionRefusedError, ConnectionError, TimeoutError, RuntimeError):
+        logger.warning(f"Connection to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')} failed")
         sys.exit(1)
 
     shared_state = {"frequency": None, "mode": None, "power": None}

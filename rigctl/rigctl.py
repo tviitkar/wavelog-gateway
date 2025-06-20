@@ -30,6 +30,9 @@ class RigctlTelnet:
         except asyncio.TimeoutError:
             raise TimeoutError(f"Timeout waiting for response to command '{command}'")
 
+    async def test_connection(self):
+        return await self.send_command("f")
+
     async def get_frequency(self):
         return await self.send_command("f")
 
