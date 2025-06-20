@@ -42,17 +42,22 @@ class VariableWatcher:
             await self.callback(**self.shared_state)
 
 
-async def radio_api_call(**kwargs):
-    data = {"key": WAVELOG_API_KEY, "radio": WAVELOG_STATION_ID, **kwargs}
+def wavelog_api_radio(session):
+    async def _call(**kwargs):
+        data = {"key": WAVELOG_API_KEY, "radio": WAVELOG_STATION_ID, **kwargs}
 
-    async with aiohttp.ClientSession() as session:
         async with session.post(
             url=WAVELOG_URL + "api/radio",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
             json=data,
         ) as response:
             if response.status != 200:
                 logger.warning(f"{await response.json()}")
+
+    return _call
 
 
 async def main_process():
@@ -71,19 +76,22 @@ async def main_process():
 
     shared_state = {"frequency": None, "mode": None, "power": None}
 
-    frequency = VariableWatcher("frequency", shared_state, callback=radio_api_call)
-    mode = VariableWatcher("mode", shared_state, callback=radio_api_call)
-    power = VariableWatcher("power", shared_state, callback=radio_api_call)
+    async with aiohttp.ClientSession() as session:
+        api_callback = wavelog_api_radio(session)
 
-    while True:
-        try:
-            frequency.value = await rig.get_frequency()
-            mode.value = await rig.get_mode()
-            power.value = await rig.get_rfpower(frequency.value, mode.value)
-        except (RuntimeError, TimeoutError) as err:
-            logger.warning(f"{err}")
-            sys.exit(1)
-        await asyncio.sleep(1)
+        frequency = VariableWatcher("frequency", shared_state, callback=api_callback)
+        mode = VariableWatcher("mode", shared_state, callback=api_callback)
+        power = VariableWatcher("power", shared_state, callback=api_callback)
+
+        while True:
+            try:
+                frequency.value = await rig.get_frequency()
+                mode.value = await rig.get_mode()
+                power.value = await rig.get_rfpower(frequency.value, mode.value)
+            except (RuntimeError, TimeoutError) as err:
+                logger.warning(f"{err}")
+                sys.exit(1)
+            await asyncio.sleep(1)
 
 
 asyncio.run(main_process())
