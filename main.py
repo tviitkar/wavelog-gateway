@@ -8,12 +8,17 @@ from logger.logger import logger
 
 logger = logger(__name__)
 
+RIGCTL_ADDRESS = os.getenv("RIGCTL_ADDRESS")
+RIGCTL_PORT = os.getenv("RIGCTL_PORT")
+WAVELOG_API_KEY = os.getenv("WAVELOG_API_KEY")
+WAVELOG_STATION_ID = os.getenv("WAVELOG_STATION_ID")
+WAVELOG_URL = os.getenv("WAVELOG_URL")
+
 
 class VariableWatcher:
     def __init__(self, name, shared_state, callback=None):
+        self._value, self._old_value = None, None
         self.name = name
-        self._value = None
-        self._previous_value = None
         self.shared_state = shared_state
         self.callback = callback
 
@@ -22,11 +27,13 @@ class VariableWatcher:
         return self._value
 
     @value.setter
-    def value(self, new_value):
-        if new_value != self._previous_value:
-            self._value = new_value
-            self._previous_value = new_value
-            self.shared_state[self.name] = new_value
+    def value(self, value):
+        if value != self._old_value:
+            self._value, self._old_value, self.shared_state[self.name] = (
+                value,
+                value,
+                value,
+            )
             asyncio.create_task(self.on_change())
 
     async def on_change(self):
@@ -36,17 +43,11 @@ class VariableWatcher:
 
 
 async def radio_api_call(**kwargs):
-    data = {
-        "key": os.getenv("WAVELOG_API_KEY"),
-        "radio": os.getenv("WAVELOG_STATION_ID"),
-    }
-
-    for key, value in kwargs.items():
-        data[key] = value
+    data = {"key": WAVELOG_API_KEY, "radio": WAVELOG_STATION_ID, **kwargs}
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            url=os.getenv("WAVELOG_URL") + "api/radio",
+            url=WAVELOG_URL + "api/radio",
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             json=data,
         ) as response:
@@ -55,23 +56,17 @@ async def radio_api_call(**kwargs):
 
 
 async def main_process():
-    rig = RigctlTelnet(os.getenv("RIGCTL_ADDRESS"), os.getenv("RIGCTL_PORT"))
+    rig = RigctlTelnet(RIGCTL_ADDRESS, RIGCTL_PORT)
 
     try:
-        logger.info(
-            f"Connecting to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}"
-        )
+        logger.info(f"Connecting to {RIGCTL_ADDRESS}:{RIGCTL_PORT}")
         await rig.connect()
         connection_test = await rig.test_connection()
         if not connection_test:
             raise ConnectionError
-        logger.info(
-            f"Connected to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}"
-        )
+        logger.info(f"Connected to {RIGCTL_ADDRESS}:{RIGCTL_PORT}")
     except (ConnectionRefusedError, ConnectionError, TimeoutError, RuntimeError):
-        logger.warning(
-            f"Connection to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')} failed"
-        )
+        logger.warning(f"Connection to {RIGCTL_ADDRESS}:{RIGCTL_PORT} failed")
         sys.exit(1)
 
     shared_state = {"frequency": None, "mode": None, "power": None}
