@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import os
+import sys
 
 from rigctl.rigctl import RigctlTelnet
 from logger.logger import logger
@@ -57,15 +58,21 @@ async def main_process():
     rig = RigctlTelnet(os.getenv("RIGCTL_ADDRESS"), os.getenv("RIGCTL_PORT"))
 
     try:
+        logger.info(
+            f"Connecting to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}"
+        )
         await rig.connect()
+        connection_test = await rig.test_connection()
+        if not connection_test:
+            raise ConnectionError
         logger.info(
             f"Connected to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}"
         )
-    except Exception:
+    except (ConnectionRefusedError, ConnectionError, TimeoutError, RuntimeError):
         logger.warning(
-            f"Connection to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')} failed."
+            f"Connection to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')} failed"
         )
-        raise
+        sys.exit(1)
 
     shared_state = {"frequency": None, "mode": None, "power": None}
 
@@ -78,9 +85,9 @@ async def main_process():
             frequency.value = await rig.get_frequency()
             mode.value = await rig.get_mode()
             power.value = await rig.get_rfpower(frequency.value, mode.value)
-        except Exception:
-            logger.warning("Critical error, exiting.")
-            raise
+        except (RuntimeError, TimeoutError) as err:
+            logger.warning(f"{err}")
+            sys.exit(1)
         await asyncio.sleep(1)
 
 
