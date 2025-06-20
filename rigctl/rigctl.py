@@ -18,14 +18,17 @@ class RigctlTelnet:
         self.writer.close()
 
     async def send_command(self, command: str):
-        self.writer.write(command + "\n")
-        await self.writer.drain()
+        try:
+            self.writer.write(command + "\n")
+            await self.writer.drain()
 
-        response = await asyncio.wait_for(self.reader.read(512), timeout=5)
-        match = re.match(r"RPRT (-\d+)", response)
-        if match:
-            raise RuntimeError(f"rigctld returned error code {int(match.group(1))} for command '{command}'")
-        return response.strip()
+            response = await asyncio.wait_for(self.reader.read(512), timeout=5)
+            match = re.match(r"RPRT (-\d+)", response)
+            if match:
+                raise RuntimeError(f"rigctld returned error code {int(match.group(1))} for command '{command}'")
+            return response.strip()
+        except asyncio.TimeoutError:
+            raise TimeoutError(f"Timeout waiting for response to command '{command}'")
 
     async def get_frequency(self):
         return await self.send_command("f")

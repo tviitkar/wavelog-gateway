@@ -62,11 +62,9 @@ async def main_process():
         logger.info(
             f"Connected to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')}"
         )
-    except Exception:
-        logger.warning(
-            f"Connection to {os.getenv('RIGCTL_ADDRESS')}:{os.getenv('RIGCTL_PORT')} failed."
-        )
-        raise
+    except ConnectionRefusedError as err:
+        logger.warning(f"{err}")
+        sys.exit(1)
 
     shared_state = {"frequency": None, "mode": None, "power": None}
 
@@ -79,7 +77,7 @@ async def main_process():
             frequency.value = await rig.get_frequency()
             mode.value = await rig.get_mode()
             power.value = await rig.get_rfpower(frequency.value, mode.value)
-        except RuntimeError as err:
+        except (RuntimeError, TimeoutError) as err:
             logger.warning(f"{err}")
             sys.exit(1)
         await asyncio.sleep(1)
