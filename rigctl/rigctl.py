@@ -5,10 +5,8 @@ import re
 
 class RigctlTelnet:
     def __init__(self, hostname: str, port: int):
-        self.hostname = hostname
-        self.port = port
-        self.reader = None
-        self.write = None
+        self.hostname, self.port = hostname, port
+        self.reader, self.write = None, None
 
     async def connect(self):
         self.reader, self.writer = await telnetlib3.open_connection(
