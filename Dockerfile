@@ -1,4 +1,4 @@
-FROM python:3.13.5-alpine
+FROM --platform=$BUILDPLATFORM python:3.13.5-alpine
 
 ENV PYTHONUNBUFFERED=1
 
