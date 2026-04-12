@@ -93,8 +93,6 @@ If the connection to `rigctld` is lost, the application will log a warning and e
 
 - Because the connection between this Python application and `rigctld` uses Telnet, which is not secure, it’s strongly recommended to run both `rigctld` and `wavelog-gateway` on the same host or within a trusted private network.
 
-- The `.devcontainer` directory is for personal development use only at this time; the Docker image used is in a private repository. This may change and be made public in the future. For now, it’s safe to ignore.
-
 ## References
 
 - [Wavelog](https://github.com/wavelog)
