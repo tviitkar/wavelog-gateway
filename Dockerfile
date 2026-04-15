@@ -5,8 +5,7 @@ ENV PYTHONUNBUFFERED=1
 RUN adduser -D ham
 
 RUN pip3 install --no-cache-dir \
-    aiohttp==3.12.13 \
-    telnetlib3==2.0.4
+    aiohttp==3.12.13
 
 WORKDIR /app
 COPY --chown=ham:ham wavelog-gateway/ .
