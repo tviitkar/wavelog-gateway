@@ -8,11 +8,27 @@ from logger.logger import logger as get_logger
 
 logger = get_logger(__name__)
 
-RIGCTL_ADDRESS = os.getenv("RIGCTL_ADDRESS")
-RIGCTL_PORT = os.getenv("RIGCTL_PORT")
-WAVELOG_API_KEY = os.getenv("WAVELOG_API_KEY")
-WAVELOG_STATION_ID = os.getenv("WAVELOG_STATION_ID")
-WAVELOG_URL = os.getenv("WAVELOG_URL")
+
+def get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        logger.error(f"Environment variable '{name}' is not set or is empty.")
+        sys.exit(1)
+    return value
+
+
+RIGCTL_ADDRESS = get_required_env("RIGCTL_ADDRESS")
+WAVELOG_API_KEY = get_required_env("WAVELOG_API_KEY")
+WAVELOG_STATION_ID = get_required_env("WAVELOG_STATION_ID")
+WAVELOG_URL: str = get_required_env("WAVELOG_URL")
+if not WAVELOG_URL.endswith("/"):
+    WAVELOG_URL += "/"
+
+try:
+    RIGCTL_PORT = int(get_required_env("RIGCTL_PORT"))
+except ValueError:
+    logger.error("Environment variable 'RIGCTL_PORT' must be a valid integer.")
+    sys.exit(1)
 
 
 class VariableWatcher:
