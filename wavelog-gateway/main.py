@@ -1,8 +1,10 @@
 import aiohttp
 import asyncio
-import os
 import sys
 from typing import Any, Awaitable, Callable, Dict, Optional
+
+from pydantic import ValidationError, field_validator
+from pydantic_settings import BaseSettings
 
 from rigctl.rigctl import RigctlAsync
 from logger.logger import logger as get_logger
@@ -10,25 +12,24 @@ from logger.logger import logger as get_logger
 logger = get_logger(__name__)
 
 
-def get_required_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        logger.error(f"Environment variable '{name}' is not set or is empty.")
-        sys.exit(1)
-    return value
+class Settings(BaseSettings):
+    RIGCTL_ADDRESS: str
+    RIGCTL_PORT: int
+    WAVELOG_API_KEY: str
+    WAVELOG_STATION_ID: str
+    WAVELOG_URL: str
 
+    @field_validator("WAVELOG_URL")
+    @classmethod
+    def ensure_trailing_slash(cls, v: str) -> str:
+        """Automatically add a trailing slash to the URL if it's missing."""
+        return v if v.endswith("/") else f"{v}/"
 
-RIGCTL_ADDRESS = get_required_env("RIGCTL_ADDRESS")
-WAVELOG_API_KEY = get_required_env("WAVELOG_API_KEY")
-WAVELOG_STATION_ID = get_required_env("WAVELOG_STATION_ID")
-WAVELOG_URL: str = get_required_env("WAVELOG_URL")
-if not WAVELOG_URL.endswith("/"):
-    WAVELOG_URL += "/"
 
 try:
-    RIGCTL_PORT = int(get_required_env("RIGCTL_PORT"))
-except ValueError:
-    logger.error("Environment variable 'RIGCTL_PORT' must be a valid integer.")
+    settings = Settings()
+except ValidationError as e:
+    logger.error(f"Configuration validation failed:\n{e}")
     sys.exit(1)
 
 
@@ -66,11 +67,15 @@ class VariableWatcher:
 
 def wavelog_api_radio(session: aiohttp.ClientSession) -> Callable[..., Awaitable[None]]:
     async def _call(**kwargs: Any) -> None:
-        data = {"key": WAVELOG_API_KEY, "radio": WAVELOG_STATION_ID, **kwargs}
+        data = {
+            "key": settings.WAVELOG_API_KEY,
+            "radio": settings.WAVELOG_STATION_ID,
+            **kwargs,
+        }
 
         try:
             async with session.post(
-                url=WAVELOG_URL + "api/radio",
+                url=settings.WAVELOG_URL + "api/radio",
                 headers={
                     "Content-Type": "application/json",
                     "Accept": "application/json",
@@ -87,17 +92,17 @@ def wavelog_api_radio(session: aiohttp.ClientSession) -> Callable[..., Awaitable
 
 
 async def main_process() -> None:
-    rig = RigctlAsync(RIGCTL_ADDRESS, RIGCTL_PORT)
+    rig = RigctlAsync(settings.RIGCTL_ADDRESS, settings.RIGCTL_PORT)
 
     try:
-        logger.info(f"Connecting to {RIGCTL_ADDRESS}:{RIGCTL_PORT}")
+        logger.info(f"Connecting to {settings.RIGCTL_ADDRESS}:{settings.RIGCTL_PORT}")
         await rig.connect()
         connection_test = await rig.test_connection()
         if not connection_test:
             raise ConnectionError
-        logger.info(f"Connected to {RIGCTL_ADDRESS}:{RIGCTL_PORT}")
+        logger.info(f"Connected to {settings.RIGCTL_ADDRESS}:{settings.RIGCTL_PORT}")
     except (ConnectionRefusedError, ConnectionError, TimeoutError, RuntimeError):
-        logger.warning(f"Connection to {RIGCTL_ADDRESS}:{RIGCTL_PORT} failed")
+        logger.warning(f"Connection to {settings.RIGCTL_ADDRESS}:{settings.RIGCTL_PORT} failed")
         sys.exit(1)
 
     shared_state: Dict[str, Optional[str]] = {
