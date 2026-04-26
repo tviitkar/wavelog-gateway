@@ -1,24 +1,26 @@
 import asyncio
 import re
+from typing import Optional
 
 
 class RigctlAsync:
     def __init__(self, hostname: str, port: int):
         self.hostname, self.port = hostname, port
-        self.reader, self.writer = None, None
+        self.reader: asyncio.StreamReader | None = None
+        self.writer: asyncio.StreamWriter | None = None
 
-    async def connect(self):
+    async def connect(self) -> None:
         self.reader, self.writer = await asyncio.open_connection(
             self.hostname, self.port
         )
 
-    async def close(self):
+    async def close(self) -> None:
         if self.writer:
             self.writer.close()
             await self.writer.wait_closed()
 
-    async def send_command(self, command: str):
-        if not self.writer:
+    async def send_command(self, command: str) -> str:
+        if not self.writer or not self.reader:
             raise ConnectionError("Not connected to rigctld.")
 
         try:
@@ -37,20 +39,20 @@ class RigctlAsync:
         except asyncio.TimeoutError:
             raise TimeoutError(f"rigctld timed out on command: {command}")
 
-    async def test_connection(self):
+    async def test_connection(self) -> str:
         return await self.send_command("f")
 
-    async def get_frequency(self):
+    async def get_frequency(self) -> str:
         return await self.send_command("f")
 
-    async def get_mode(self):
+    async def get_mode(self) -> str:
         response = await self.send_command("m")
         return response.splitlines()[0]
 
-    async def get_rfpower(self, freq, mode):
+    async def get_rfpower(self, freq: str, mode: str) -> str:
         rfpower = await self.send_command("l RFPOWER")
         return await self.convert_to_watts(rfpower, freq, mode)
 
-    async def convert_to_watts(self, rfpower, freq, mode):
+    async def convert_to_watts(self, rfpower: str, freq: str, mode: str) -> str:
         milliwats = await self.send_command(f"2 {rfpower} {freq} {mode}")
         return str(round(int(milliwats) / 1000))
