@@ -68,16 +68,20 @@ def wavelog_api_radio(session: aiohttp.ClientSession) -> Callable[..., Awaitable
     async def _call(**kwargs: Any) -> None:
         data = {"key": WAVELOG_API_KEY, "radio": WAVELOG_STATION_ID, **kwargs}
 
-        async with session.post(
-            url=WAVELOG_URL + "api/radio",
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-            json=data,
-        ) as response:
-            if response.status != 200:
-                logger.warning(f"{await response.json()}")
+        try:
+            async with session.post(
+                url=WAVELOG_URL + "api/radio",
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                json=data,
+                timeout=aiohttp.ClientTimeout(total=5),
+            ) as response:
+                if response.status != 200:
+                    logger.warning(f"Wavelog API error {response.status}: {await response.text()}")
+        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+            logger.warning(f"Failed to send data to Wavelog: {e}")
 
     return _call
 
