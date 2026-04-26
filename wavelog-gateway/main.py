@@ -4,9 +4,9 @@ import os
 import sys
 
 from rigctl.rigctl import RigctlAsync
-from logger.logger import logger
+from logger.logger import logger as get_logger
 
-logger = logger(__name__)
+logger = get_logger(__name__)
 
 RIGCTL_ADDRESS = os.getenv("RIGCTL_ADDRESS")
 RIGCTL_PORT = os.getenv("RIGCTL_PORT")
