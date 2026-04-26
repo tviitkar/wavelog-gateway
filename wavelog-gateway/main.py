@@ -84,7 +84,9 @@ def wavelog_api_radio(session: aiohttp.ClientSession) -> Callable[..., Awaitable
                 timeout=aiohttp.ClientTimeout(total=5),
             ) as response:
                 if response.status != 200:
-                    logger.warning(f"Wavelog API error {response.status}: {await response.text()}")
+                    logger.warning(
+                        f"Wavelog API error {response.status}: {await response.text()}"
+                    )
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             logger.warning(f"Failed to send data to Wavelog: {e}")
 
@@ -102,7 +104,9 @@ async def main_process() -> None:
             raise ConnectionError
         logger.info(f"Connected to {settings.RIGCTL_ADDRESS}:{settings.RIGCTL_PORT}")
     except (ConnectionRefusedError, ConnectionError, TimeoutError, RuntimeError):
-        logger.warning(f"Connection to {settings.RIGCTL_ADDRESS}:{settings.RIGCTL_PORT} failed")
+        logger.warning(
+            f"Connection to {settings.RIGCTL_ADDRESS}:{settings.RIGCTL_PORT} failed"
+        )
         sys.exit(1)
 
     shared_state: Dict[str, Optional[str]] = {
