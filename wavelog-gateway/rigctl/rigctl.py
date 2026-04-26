@@ -1,35 +1,41 @@
-import telnetlib3
 import asyncio
 import re
 
 
-class RigctlTelnet:
+class RigctlAsync:
     def __init__(self, hostname: str, port: int):
         self.hostname, self.port = hostname, port
-        self.reader, self.write = None, None
+        self.reader, self.writer = None, None
 
     async def connect(self):
-        self.reader, self.writer = await telnetlib3.open_connection(
+        self.reader, self.writer = await asyncio.open_connection(
             self.hostname, self.port
         )
 
     async def close(self):
-        self.writer.close()
+        if self.writer:
+            self.writer.close()
+            await self.writer.wait_closed()
 
     async def send_command(self, command: str):
+        if not self.writer:
+            raise ConnectionError("Not connected to rigctld.")
+
         try:
-            self.writer.write(command + "\n")
+            self.writer.write(f"{command}\n".encode())
             await self.writer.drain()
 
-            response = await asyncio.wait_for(self.reader.read(512), timeout=5)
-            match = re.match(r"RPRT (-\d+)", response)
-            if match:
-                raise RuntimeError(
-                    f"rigctld returned error code {match.group(1)} for command '{command}'"
-                )
-            return response.strip()
+            data = await asyncio.wait_for(self.reader.read(1024), timeout=5)
+            response = data.decode().strip()
+
+            if "RPT" in response:
+                match = re.search(r"RPRT (-?\d+)", response)
+                if match and match.group(1) != "0":
+                    raise RuntimeError(f"rigctld error {match.group(1)} on: {command}")
+
+            return response
         except asyncio.TimeoutError:
-            raise TimeoutError(f"Timeout waiting for response to command '{command}'")
+            raise TimeoutError(f"rigctld timed out on command: {command}")
 
     async def test_connection(self):
         return await self.send_command("f")

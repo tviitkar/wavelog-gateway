@@ -3,7 +3,7 @@ import asyncio
 import os
 import sys
 
-from rigctl.rigctl import RigctlTelnet
+from rigctl.rigctl import RigctlAsync
 from logger.logger import logger
 
 logger = logger(__name__)
@@ -61,7 +61,7 @@ def wavelog_api_radio(session):
 
 
 async def main_process():
-    rig = RigctlTelnet(RIGCTL_ADDRESS, RIGCTL_PORT)
+    rig = RigctlAsync(RIGCTL_ADDRESS, RIGCTL_PORT)
 
     try:
         logger.info(f"Connecting to {RIGCTL_ADDRESS}:{RIGCTL_PORT}")
