@@ -118,18 +118,23 @@ async def main_process() -> None:
         mode = VariableWatcher("mode", shared_state, callback=api_callback)
         power = VariableWatcher("power", shared_state, callback=api_callback)
 
-        while True:
-            try:
-                # Capture values locally to satisfy type requirements for get_rfpower
-                f_val = await rig.get_frequency()
-                m_val = await rig.get_mode()
-                frequency.value = f_val
-                mode.value = m_val
-                power.value = await rig.get_rfpower(f_val, m_val)
-            except (RuntimeError, TimeoutError) as err:
-                logger.warning(f"{err}")
-                sys.exit(1)
-            await asyncio.sleep(1)
+        try:
+            while True:
+                try:
+                    f_val = await rig.get_frequency()
+                    m_val = await rig.get_mode()
+                    p_val = await rig.get_rfpower(f_val, m_val)
+
+                    frequency.value = f_val
+                    mode.value = m_val
+                    power.value = p_val
+
+                except (RuntimeError, TimeoutError) as err:
+                    logger.warning(f"Polling error: {err}")
+                    sys.exit(1)
+                await asyncio.sleep(1)
+        finally:
+            await rig.close()
 
 
 asyncio.run(main_process())
