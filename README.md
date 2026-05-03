@@ -22,31 +22,31 @@ While there is an official project, [WaveLogGate](https://github.com/wavelog/Wav
 
 - Docker
 - A rigctld server accessible over the network
-- Wavelog instance and its API credentials
+- Wavelog instance
+
+### Security
+
+Always use HTTPS when communicating with public or internet-facing servers. Since the `WAVELOG_API_KEY` is transmitted in the body of the JSON payload, using `http://` sends your credentials in plain text. This makes your API key vulnerable to interception by anyone monitoring traffic between your gateway and the Wavelog server.
+
+If you are hosting your Wavelog instance on a local, trusted LAN, `http://` may be acceptable if you are confident in your network security. However, please be aware that even on a local network, any device capable of intercepting traffic (e.g., via a compromised router or a malicious actor on the network) could capture the unencrypted API key. For the highest level of security in all environments, HTTPS is strongly recommended.
 
 ### Environment variables
 
-| Variable            | Description                       |
-|---------------------|-----------------------------------|
-| `RIGCTL_ADDRESS`    | Hostname/IP of rigctld server     |
-| `RIGCTL_PORT`       | Port of rigctld server            |
-| `WAVELOG_API_KEY`   | API key from Wavelog              |
-| `WAVELOG_STATION_ID`| Station ID from Wavelog           |
+| Variable            | Description                                                   |
+|---------------------|---------------------------------------------------------------|
+| `RIGCTL_ADDRESS`    | Hostname/IP of rigctld server                                 |
+| `RIGCTL_PORT`       | Port of rigctld server                                        |
+| `WAVELOG_API_KEY`   | API key from Wavelog                                          |
+| `WAVELOG_STATION_ID`| Station ID from Wavelog                                       |
 | `WAVELOG_URL`       | Base URL for Wavelog (e.g., `https://your.wavelog.instance/`) |
 
 ## Usage
 
-> **Note:** Prebuilt images are available on Docker Hub: [tviitkar/wavelog-gateway](https://hub.docker.com/r/tviitkar/wavelog-gateway)
+> **Note:** You can pull the latest prebuilt image from the [GitHub Container Registry](https://github.com/tviitkar/wavelog-gateway/pkgs/container/wavelog-gateway).
 
-### Run with Docker
+### Docker CLI
 
-Build the Docker image:
-
-```bash
-docker build -t wavelog-gateway .
-```
-
-Run the container:
+To run the container directly, use the following command:
 
 ```bash
 docker run --rm \
@@ -60,12 +60,12 @@ docker run --rm \
 
 ### Docker Compose
 
-Example `docker-compose.yml`:
+For a more persistent and reproducible setup, add the service to your docker-compose.yml file:
 
 ```yaml
 services:
   wavelog-gateway:
-    image: tviitkar/wavelog-gateway:latest
+    image: ghcr.io/tviitkar/wavelog-gateway:latest
     container_name: wavelog-gateway
     network_mode: host
     environment:
@@ -87,12 +87,7 @@ docker compose up -d
 
 If the connection to `rigctld` is lost, the application will log a warning and exit. When run with a Docker restart policy such as `restart: unless-stopped`, the container will automatically restart, attempting to re-establish the connection. This design enables the container to self-heal from temporary connection failures, improving reliability and minimizing downtime without manual intervention.
 
-## Notes
-
-- I have also created a Docker image for `rigctld`. For details, visit [https://github.com/tviitkar/rigctld](https://github.com/tviitkar/rigctld).
-
 ## References
 
 - [Wavelog](https://github.com/wavelog)
 - [WaveLogGate](https://github.com/wavelog/WaveLogGate)
-- [rigctld documentation](https://hamlib.sourceforge.net/html/rigctld.1.html)
